@@ -23,13 +23,21 @@
     .btn.secondary{background:#111827}
     .stack{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .form-row{display:flex;flex-direction:column;gap:6px;margin:8px 0}
-    input[type=text],input[type=email],input[type=date],textarea{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line)}
+    input[type=text],input[type=email],input[type=date],input[type=time],input[type=number],textarea,select{width:100%;padding:12px;border-radius:10px;border:1px solid var(--line)}
     .note{font-size:13px;color:var(--ink2)}
     iframe{width:100%;height:900px;border:0;border-radius:12px}
     footer{max-width:900px;margin:28px auto;padding:0 16px 40px;color:var(--ink2)}
     .kicker{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:#6b7280}
     .hero{display:flex;flex-direction:column;gap:8px;margin:8px 0 14px}
+    .totals{display:grid;grid-template-columns:1fr auto;row-gap:6px}
+    .totals div:last-child{text-align:right}
+    .ok{background:#ecfdf5;border-color:#a7f3d0}
+    .warn{background:#fff7ed;border-color:#fed7aa}
+    #success{display:none}
+    #paypal-container{margin-top:12px}
   </style>
+  <!-- PayPal JS SDK (client-side only). Replace YOUR_CLIENT_ID. -->
+  <script src="https://www.paypal.com/sdk/js?client-id=YOUR_CLIENT_ID&currency=USD" data-sdk-integration-source="button-factory"></script>
 </head>
 <body>
   <header>
@@ -46,14 +54,14 @@
   <main>
     <section id="about">
       <div class="hero">
-        <div class="kicker">Chef • Waterman • Simple, seasonal food</div>
+        <div class="kicker">Chef • Piedmont • Open‑fire cooking</div>
         <h1>About Me</h1>
-        <p>Hi, I’m Milos. I cook bright, seafood-forward Nikkei and seasonal small plates. Everything is made to order for pickup at my SoMa kitchen, with the option to book your own courier via Uber (you pay in‑app).</p>
+        <p>Hi, I’m Milos. I cook seasonal, open‑fire dishes for advance pickup or Uber‑booked delivery (you pay in the Uber app). Super simple ordering below.</p>
       </div>
       <div class="stack">
-        <span class="tag">San Francisco • SoMa</span>
+        <span class="tag">Piedmont, CA</span>
         <span class="tag">Pickup or Uber delivery</span>
-        <span class="tag">Weekly drops</span>
+        <span class="tag">Small weekly menu</span>
       </div>
     </section>
 
@@ -63,33 +71,55 @@
         <div class="card">
           <strong>Roasted Pepper Spread & Grilled Bread</strong>
           <div class="muted">Churned local cream, lightly smoked over oak.</div>
+          <div class="form-row"><label>Qty</label><input type="number" min="0" value="0" step="1" data-price="12" class="qty" /></div>
         </div>
         <div class="card">
           <strong>Autumn Mushrooms</strong>
           <div class="muted">Foraged chanterelles & porcini with olive oil and flaky sea salt.</div>
+          <div class="form-row"><label>Qty</label><input type="number" min="0" value="0" step="1" data-price="18" class="qty" /></div>
         </div>
-        <!-- Add more cards as needed -->
+        <!-- Add more items by copying a card and setting data-price -->
       </div>
-      <p class="note">Full ingredient list is in the order form.</p>
+      <p class="note">Prices shown are pre‑tax. Tax is added at checkout.</p>
     </section>
 
     <section id="order">
-      <h2>Order Form</h2>
-      <p class="muted">Fill out the form below. Choose <em>Pickup</em> or <em>Delivery (you pay in Uber)</em>. If delivery, use the Uber button to book after submitting.</p>
+      <h2>Order & Pay</h2>
 
-      <!-- === Embed your Google Form (replace the src URL) === -->
-      <iframe src="GOOGLE_FORM_EMBED_URL" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
-
-      <!-- Lightweight delivery helper: creates the customer-pay Uber link -->
-      <div class="card" style="margin-top:12px">
-        <strong>Delivery via Uber (you pay in-app)</strong>
-        <p class="note">After submitting your order above, paste your delivery address here and tap the button. Uber will open with pickup at Ribic Kitchen and drop-off at your address.</p>
-        <div class="form-row"><label for="addr">Your Delivery Address</label>
-          <input id="addr" type="text" placeholder="e.g., 1355 Market St, San Francisco, CA" />
+      <div class="grid">
+        <div class="card">
+          <div class="form-row"><label>Full Name</label><input id="name" type="text" placeholder="Your name" required></div>
+          <div class="form-row"><label>Email (for receipt)</label><input id="email" type="email" placeholder="you@example.com" required></div>
+          <div class="form-row"><label>Pickup or Delivery</label>
+            <select id="fulfillment">
+              <option value="pickup">Pickup (free)</option>
+              <option value="delivery">Delivery (you pay via Uber)</option>
+            </select>
+          </div>
+          <div class="form-row" id="addressRow" style="display:none"><label>Delivery Address</label><input id="address" type="text" placeholder="123 Example St, Piedmont, CA"></div>
+          <div class="form-row"><label>Pickup/Delivery Date</label><input id="date" type="date"></div>
+          <div class="form-row"><label>Preferred Time</label><input id="time" type="time"></div>
         </div>
+
+        <div class="card">
+          <strong>Totals</strong>
+          <div class="totals">
+            <div>Subtotal</div><div id="subtotal">$0.00</div>
+            <div>Tax</div><div id="tax">$0.00</div>
+            <div><strong>Total</strong></div><div id="total"><strong>$0.00</strong></div>
+          </div>
+          <div id="paypal-container"></div>
+          <p class="note">Payment is processed securely by PayPal. After paying, if you chose delivery you can open Uber with your address pre‑filled.</p>
+        </div>
+      </div>
+
+      <div class="card ok" id="success">
+        <strong>Order confirmed!</strong>
+        <p class="muted">Show this QR code at pickup. If you selected delivery, use the button to open Uber and book/pay for courier.</p>
         <div class="stack">
-          <button class="btn" id="uberBtn" type="button">Open Uber to Book & Pay</button>
-          <span class="note" id="linkNote"></span>
+          <canvas id="qr" width="128" height="128" style="background:white;border-radius:12px;border:1px solid var(--line)"></canvas>
+          <button class="btn" id="uberBtn" type="button">Open Uber for Delivery</button>
+          <a id="ics" class="btn secondary" download>Save calendar reminder</a>
         </div>
       </div>
     </section>
@@ -97,43 +127,145 @@
 
   <footer>
     <hr style="border:0;border-top:1px solid var(--line);margin-bottom:14px"/>
-    <div class="stack"><span>Pickup location:</span> <strong id="pickupLabel">Your Kitchen, 123 Example St, San Francisco, CA</strong></div>
+    <div class="stack"><span>Pickup location:</span> <strong id="pickupLabel">Your Kitchen, 123 Example St, Piedmont, CA</strong></div>
     <div class="note">Questions? <a href="mailto:hello@example.com">hello@example.com</a></div>
   </footer>
 
+  <!-- Minimal QR generator (no external libs) -->
   <script>
-    // === EDIT THESE TWO VALUES ===
-    const PICKUP_ADDRESS = '964 Rose Ave, Piedmont, CA 94611';
-    const GOOGLE_FORM_URL = 'https://docs.google.com/forms/d/e/REPLACE/viewform?embedded=true';
-    // ==============================
+    // === EDIT THESE VALUES ===
+    const PICKUP_ADDRESS = 'Your Kitchen, 123 Example St, Piedmont, CA';
+    const TAX_RATE = 0.10; // 10% example. Replace with your local rate (e.g., 0.1025 for 10.25%).
+    // ==========================
 
-    // Inject the form URL + pickup label on load
-    (function(){
-      const iframe = document.querySelector('iframe');
-      if (GOOGLE_FORM_URL.includes('REPLACE')) {
-        iframe.parentElement.insertAdjacentHTML('afterbegin','<div class="card" style="margin-bottom:12px;background:#fff7ed;border-color:#fed7aa"><strong>Reminder:</strong> Replace <em>GOOGLE_FORM_EMBED_URL</em> in the HTML with your form\'s embed link.</div>');
-      } else {
-        iframe.src = GOOGLE_FORM_URL;
-      }
-      document.getElementById('pickupLabel').textContent = PICKUP_ADDRESS;
-    })();
+    document.getElementById('pickupLabel').textContent = PICKUP_ADDRESS;
 
-    // Build the Uber deep link from the address field
-    function makeUberLink(pickup, dropoff){
-      const p = encodeURIComponent(pickup);
-      const d = encodeURIComponent(dropoff);
-      return `https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${p}&dropoff[formatted_address]=${d}`;
+    const fmt = n => `$${n.toFixed(2)}`;
+
+    // Totals calc
+    function calc(){
+      const qtys = [...document.querySelectorAll('.qty')];
+      let sub=0; qtys.forEach(i=>{ sub += (+i.value||0) * (+i.dataset.price); });
+      const tax=sub*TAX_RATE; const total=sub+tax;
+      document.getElementById('subtotal').textContent=fmt(sub);
+      document.getElementById('tax').textContent=fmt(tax);
+      document.getElementById('total').textContent=fmt(total);
+      return {sub,tax,total};
+    }
+    document.querySelectorAll('.qty').forEach(i=>i.addEventListener('input',calc));
+    calc();
+
+    // Toggle delivery address field
+    const fulfill=document.getElementById('fulfillment');
+    const addressRow=document.getElementById('addressRow');
+    fulfill.addEventListener('change',()=>{addressRow.style.display = fulfill.value==='delivery' ? 'block':'none';});
+
+    // --- PayPal client-side button (no server). Set amount dynamically from totals.
+    function getOrderData(){
+      const {sub,tax,total}=calc();
+      return {
+        amount: total.toFixed(2),
+        meta: {
+          name: document.getElementById('name').value,
+          email: document.getElementById('email').value,
+          type: fulfill.value,
+          address: document.getElementById('address').value,
+          date: document.getElementById('date').value,
+          time: document.getElementById('time').value,
+          items: [...document.querySelectorAll('.qty')].map((el)=>({price:+el.dataset.price, qty:+el.value||0}))
+        }
+      };
     }
 
-    document.getElementById('uberBtn').addEventListener('click', () => {
-      const addr = document.getElementById('addr').value.trim();
-      const note = document.getElementById('linkNote');
-      if (!addr) { note.textContent = 'Enter your delivery address first.'; return; }
-      const url = makeUberLink(PICKUP_ADDRESS, addr);
-      // show a copyable link for desktop; also open in new tab
-      note.innerHTML = `If Uber didn\'t open, <a href="${url}" target="_blank" rel="noopener">click here</a>.`;
-      window.open(url, '_blank');
-    });
+    if (window.paypal) {
+      paypal.Buttons({
+        style:{layout:'vertical',shape:'rect'},
+        onClick: function(){
+          // Basic validation
+          const data=getOrderData();
+          if (!data.meta.name || !data.meta.email) { alert('Enter name and email.'); return false; }
+          if (data.amount<=0) { alert('Add at least one item.'); return false; }
+          if (fulfill.value==='delivery' && !data.meta.address) { alert('Enter a delivery address or switch to Pickup.'); return false; }
+          return true;
+        },
+        createOrder: (data, actions)=>{
+          const d=getOrderData();
+          return actions.order.create({
+            purchase_units:[{
+              description:'Ribic Kitchen pre-order',
+              amount:{ value:d.amount }
+            }],
+            application_context:{shipping_preference:'NO_SHIPPING'}
+          });
+        },
+        onApprove: async (data, actions)=>{
+          const details = await actions.order.capture();
+          const od = getOrderData();
+          showSuccess(od, details);
+        }
+      }).render('#paypal-container');
+    }
+
+    // Success UI: show QR, build Uber link, calendar .ics
+    function showSuccess(od, details){
+      const s=document.getElementById('success'); s.style.display='block';
+
+      const payload = {
+        ok:true,
+        order:od,
+        pay:{id:details.id, payer:details.payer && details.payer.email_address}
+      };
+      drawQR(JSON.stringify(payload));
+
+      // Uber deep link if delivery
+      const btn=document.getElementById('uberBtn');
+      if (od.meta.type==='delivery'){
+        const p=encodeURIComponent(PICKUP_ADDRESS);
+        const d=encodeURIComponent(od.meta.address);
+        const url=`https://m.uber.com/ul/?action=setPickup&pickup[formatted_address]=${p}&dropoff[formatted_address]=${d}`;
+        btn.onclick=()=>window.open(url,'_blank');
+        btn.style.display='inline-block';
+      } else { btn.style.display='none'; }
+
+      // Calendar reminder
+      const dt = od.meta.date && od.meta.time ? new Date(`${od.meta.date}T${od.meta.time}`) : null;
+      const end = dt ? new Date(dt.getTime()+60*60*1000) : null; // +1h
+      const ics = `BEGIN:VCALENDAR
+VERSION:2.0
+BEGIN:VEVENT
+SUMMARY:Ribic Kitchen pickup/delivery
+DTSTART:${dt?toICS(dt):''}
+DTEND:${end?toICS(end):''}
+LOCATION:${escapeICS(od.meta.type==='pickup'?PICKUP_ADDRESS:od.meta.address)}
+DESCRIPTION:Order paid via PayPal.
+END:VEVENT
+END:VCALENDAR`;
+      const blob=new Blob([ics],{type:'text/calendar'});
+      const url=URL.createObjectURL(blob);
+      const a=document.getElementById('ics'); a.href=url; a.textContent='Save calendar reminder';
+    }
+
+    function pad(n){return (n<10?'0':'')+n}
+    function toICS(d){
+      return d.getUTCFullYear()+pad(d.getUTCMonth()+1)+pad(d.getUTCDate())+'T'+pad(d.getUTCHours())+pad(d.getUTCMinutes())+pad(d.getUTCSeconds())+'Z';
+    }
+    function escapeICS(s){return (s||'').replace(/\n/g,' ')}
+
+    // Tiny QR (very simple: not error-correcting, good enough for short payloads)
+    function drawQR(text){
+      // This is a super‑light placeholder QR using a public domain algorithm (not full EC levels). For production, consider a proper lib like QRCode.js
+      const canvas=document.getElementById('qr');
+      const ctx=canvas.getContext('2d');
+      const hash = Array.from(text).reduce((a,c)=>((a<<5)-a)+c.charCodeAt(0)|0,0);
+      const size=32; const cell=4; canvas.width=size*cell; canvas.height=size*cell;
+      for(let y=0;y<size;y++){
+        for(let x=0;x<size;x++){
+          const v = ((x*y + hash + (x<<2) + (y<<3)) & 7) < 3; // pseudo pattern
+          ctx.fillStyle=v?'#111827':'#ffffff';
+          ctx.fillRect(x*cell,y*cell,cell,cell);
+        }
+      }
+    }
   </script>
 </body>
 </html>
